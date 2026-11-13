@@ -13,10 +13,11 @@ trap '' EXIT
 
 strat="/bedrock/bin/strat"
 brl="/bedrock/bin/brl"
-state_dir="/bedrock/var/cache/brl-debian-updates"
+state_dir="/bedrock/run/debian-updates-state"
+log_dir="/bedrock/var/cache/brl-debian-updates"
 interval=3600
 
-mkdir -p "${state_dir}" /bedrock/run
+mkdir -p "${state_dir}" "${log_dir}" /bedrock/run
 
 # Only one checker may run.  The init hook is expected to start one instance,
 # but the lock also protects against a manual invocation or a second boot job.
@@ -51,7 +52,7 @@ check_stratum() {
 	# apt compatibility wrapper here, or another stratum could be updated.
 	"${strat}" -r "${stratum}" /bin/apt-get --version >/dev/null 2>&1 || return 0
 
-	update_log="${state_dir}/${stratum}.update.log"
+	update_log="${log_dir}/${stratum}.update.log"
 	if ! LC_ALL=C "${strat}" -r "${stratum}" /bin/apt-get \
 		-o DPkg::Lock::Timeout=30 -qq update >"${update_log}" 2>&1; then
 		printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ') ${stratum}: apt metadata update failed" \
@@ -82,6 +83,14 @@ check_all() {
 	for stratum in $("${brl}" list -ei 2>/dev/null); do
 		check_stratum "${stratum}"
 	done
+
+	# Remove a previously displayed notice once every Debian stratum is
+	# up-to-date.  Keep it while any pending state remains so a later login can
+	# still see an alert that was emitted before the desktop session started.
+	for pending_state in "${state_dir}"/*.pending; do
+		[ -f "${pending_state}" ] && return 0
+	done
+	rm -f /bedrock/run/debian-updates.notice
 }
 
 # Check immediately at startup, then repeat hourly.  A failed network or apt
