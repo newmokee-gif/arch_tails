@@ -107,6 +107,28 @@
 #endif
 
 /*
+ * renameat2() was added to Linux in 3.15.  Keep using the syscall interface
+ * here instead of a libc wrapper: etcfs is built against older musl versions
+ * as well as glibc, and older headers do not declare a wrapper even when the
+ * running kernel supports the syscall.  Returning ENOSYS lets callers
+ * distinguish an unavailable kernel/architecture from a real rename error.
+ */
+static int brl_renameat2(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags)
+{
+#ifdef SYS_renameat2
+	return syscall(SYS_renameat2, olddirfd, oldpath, newdirfd, newpath, flags);
+#else
+	(void)olddirfd;
+	(void)oldpath;
+	(void)newdirfd;
+	(void)newpath;
+	(void)flags;
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+/*
  * The bulk of this program consists of filesystem calls which share a fair bit
  * of structure.
  */
@@ -1250,7 +1272,6 @@ static int m_opendir(const char *path, struct fuse_file_info *fi)
 		close(fd);
 	} else {
 		rv = 0;
-		close(fd);
 		closedir(d);
 	}
 
@@ -1292,8 +1313,7 @@ static int m_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 			}
 		}
 		closedir(d);
-	}
-	if (fd >= 0) {
+	} else if (fd >= 0) {
 		close(fd);
 	}
 
@@ -1353,8 +1373,7 @@ static int m_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 			}
 		}
 		closedir(d);
-	}
-	if (fd >= 0) {
+	} else if (fd >= 0) {
 		close(fd);
 	}
 
@@ -1476,14 +1495,16 @@ static int m_rename(const char *from, const char *to, unsigned int flags)
 
 	if (flags) {
 		/*
-		 * TODO: implement flags.
-		 *
-		 * Implementing this would require renameat2() which is
-		 * upstreamed into Linux but, at the time of writing, not yet
-		 * provided by musl.
+		 * The FUSE rename callback's flags map directly to renameat2(2)
+		 * (for example RENAME_NOREPLACE and RENAME_EXCHANGE).  Do not try
+		 * to emulate these across strata: an emulation could lose the
+		 * atomicity promised by the caller.  If the kernel does not expose
+		 * renameat2, report the operation as unsupported.
 		 */
-		rv = -1;
-		errno = EOPNOTSUPP;
+		rv = brl_renameat2(ref_fd, from, to_ref_fd, to, flags);
+		if (rv < 0 && errno == ENOSYS) {
+			errno = EOPNOTSUPP;
+		}
 		goto clean_up_and_return;
 	}
 
