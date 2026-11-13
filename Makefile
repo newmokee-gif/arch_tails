@@ -970,6 +970,10 @@ $(INSTALLER): $(BUILD)/unsigned-installer.sh
 # Code quality enforcement
 #
 
+test-etcfs:
+	# Exercise the atomic rename flags used by etcfs when the host kernel supports them.
+	./tests/run-etcfs-regressions.sh
+
 format:
 	# Standardizes code formatting
 	#
