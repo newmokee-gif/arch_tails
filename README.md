@@ -212,6 +212,19 @@ Enable the CUPS and Avahi services using the init system that owns that
 stratum.  The KDE printer settings panel can then discover USB and network
 printers through CUPS.
 
+Debian update notifications
+---------------------------
+
+At boot and once per hour, the Bedrock init starts a small checker for enabled
+Debian strata.  It refreshes apt metadata and simulates an upgrade without
+installing packages.  When new packages appear, the notice includes:
+
+    sudo apt update && sudo apt upgrade
+
+The notice is shown on the next interactive shell and is also written to
+`/bedrock/run/debian-updates.log`; package-manager output is kept under
+`/bedrock/var/cache/brl-debian-updates/`.
+
 Year-2038 safety
 ----------------
 
