@@ -37,7 +37,7 @@ notify() {
 		printf '%s\n' "${message}" | wall 2>/dev/null || true
 	fi
 	if command -v logger >/dev/null 2>&1; then
-		logger -t bedrock-debian-updates -- "${message}" 2>/dev/null || true
+		logger -t bedrock-debian-updates "${message}" 2>/dev/null || true
 	fi
 }
 
