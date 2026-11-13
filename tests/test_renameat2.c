@@ -58,10 +58,19 @@ int main(void) {
     if (write_file(dirfd, "left", "L") < 0 || write_file(dirfd, "right", "R") < 0)
         goto cleanup;
     errno = 0;
-    if (renameat2_call(dirfd, "left", dirfd, "right", RENAME_NOREPLACE) != -1 || errno != EEXIST)
+    if (renameat2_call(dirfd, "left", dirfd, "right", RENAME_NOREPLACE) == -1 && errno == ENOSYS) {
+        /* The headers may know the syscall number while the running kernel does not. */
+        rc = 77;
         goto cleanup;
-    if (renameat2_call(dirfd, "left", dirfd, "right", RENAME_EXCHANGE) < 0)
+    }
+    if (errno != EEXIST)
         goto cleanup;
+    errno = 0;
+    if (renameat2_call(dirfd, "left", dirfd, "right", RENAME_EXCHANGE) < 0) {
+        if (errno == ENOSYS)
+            rc = 77;
+        goto cleanup;
+    }
     char left[2], right[2];
     if (read_file(dirfd, "left", left, sizeof(left)) < 0 || read_file(dirfd, "right", right, sizeof(right)) < 0)
         goto cleanup;
