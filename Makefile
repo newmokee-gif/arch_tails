@@ -358,7 +358,12 @@ $(COMPLETED)/libfuse: vendor/libfuse/.success_fetching_source $(COMPLETED)/build
 	cp -r $(VENDOR)/libfuse/build/lib/* $(SUPPORT)/lib/
 	mkdir -p $(SUPPORT)/include/fuse3/
 	cp $(VENDOR)/libfuse/include/*.h $(SUPPORT)/include/fuse3/
-	cp $(VENDOR)/libfuse/build/*.h $(SUPPORT)/include/fuse3/
+	# Meson has emitted libfuse_config.h in different build subdirectories
+	# across libfuse releases.  Copy generated headers recursively instead of
+	# assuming they are directly under build/ (older builds then failed with
+	# "fatal error: libfuse_config.h: No such file or directory").
+	find $(VENDOR)/libfuse/build -type f -name '*.h' -exec cp {} $(SUPPORT)/include/fuse3/ \;
+	test -f $(SUPPORT)/include/fuse3/libfuse_config.h
 	touch $(COMPLETED)/libfuse
 libfuse: $(COMPLETED)/libfuse
 
