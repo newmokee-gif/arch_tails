@@ -16,9 +16,14 @@
 # whatever distro networking stack created resolv.conf location.
 #
 
-# Something already created a /etc/resolv.conf
-if [ -e /etc/resolv.conf ] || [ -h /etc/resolv.conf ]; then
+# Something already created a usable /etc/resolv.conf.  A dangling symlink is
+# not usable: `-h` is true for it while `-e` is false, and retaining it leaves
+# DNS broken after switching to a stratum whose resolver uses another path.
+if [ -e /etc/resolv.conf ]; then
 	exit
+fi
+if [ -h /etc/resolv.conf ]; then
+	rm -f /etc/resolv.conf
 fi
 
 # Try known resolv.conf locations from various distros
