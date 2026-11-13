@@ -275,7 +275,7 @@ vendor/musl/.success_fetching_source:
 		sed 's/^/v/'` 'git://git.musl-libc.org/musl' \
 		vendor/musl
 	touch vendor/musl/.success_fetching_source
-$(COMPLETED)/musl: vendor/musl/.success_fetching_source $(COMPLETED)/builddir $(COMPLETED)/linux_headers
+$(COMPLETED)/musl: vendor/musl/.success_fetching_source $(COMPLETED)/builddir $(COMPLETED)/linux_headers Makefile
 	rm -rf $(VENDOR)/musl
 	cp -r vendor/musl $(VENDOR)
 	cd $(VENDOR)/musl/ && \
@@ -850,7 +850,8 @@ bouncer: $(SLASHBR)/libexec/bouncer
 
 $(SLASHBR)/libexec/etcfs: $(COMPLETED)/builddir \
 	$(COMPLETED)/musl \
-	$(COMPLETED)/libfuse
+	$(COMPLETED)/libfuse \
+	src/etcfs/etcfs.c src/etcfs/Makefile
 	rm -rf $(SRC)/etcfs
 	cp -r src/etcfs/ $(SRC)
 	cd $(SRC)/etcfs && \
@@ -861,7 +862,8 @@ etcfs: $(SLASHBR)/libexec/etcfs
 $(SLASHBR)/libexec/crossfs: $(COMPLETED)/builddir \
 	$(COMPLETED)/musl \
 	$(COMPLETED)/libfuse \
-	$(COMPLETED)/uthash
+	$(COMPLETED)/uthash \
+	src/crossfs/crossfs.c src/crossfs/Makefile
 	rm -rf $(SRC)/crossfs
 	cp -r src/crossfs/ $(SRC)
 	cd $(SRC)/crossfs && \
