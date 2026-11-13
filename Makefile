@@ -245,6 +245,26 @@ $(BUILD)/sbin/init: $(COMPLETED)/builddir src/init/init
 	cp src/init/init $@
 	chmod 0755 $@
 
+# The initial builddir copy is one-shot.  Keep source-managed files synchronized
+# when an existing build tree is reused, including the versioned config path
+# consumed by the installer.  Explicit modes preserve the permissions from the
+# source tree even when the destination already exists.
+$(SLASHBR)/etc/bedrock.conf-$(BEDROCK_VERSION): $(COMPLETED)/builddir src/slash-bedrock/etc/bedrock.conf
+	cp src/slash-bedrock/etc/bedrock.conf $@
+	chmod 0600 $@
+
+$(SLASHBR)/libexec/brl-apply: $(COMPLETED)/builddir src/slash-bedrock/libexec/brl-apply
+	cp src/slash-bedrock/libexec/brl-apply $@
+	chmod 0700 $@
+
+$(SLASHBR)/share/brl-fetch/distros/debian: $(COMPLETED)/builddir src/slash-bedrock/share/brl-fetch/distros/debian
+	cp src/slash-bedrock/share/brl-fetch/distros/debian $@
+	chmod 0600 $@
+
+$(SLASHBR)/share/resolvconf/00bedrock: $(COMPLETED)/builddir src/slash-bedrock/share/resolvconf/00bedrock
+	cp src/slash-bedrock/share/resolvconf/00bedrock $@
+	chmod 0700 $@
+
 #
 # Support libraries and tools.  Populates $(SUPPORT)
 #
@@ -878,6 +898,10 @@ crossfs: $(SLASHBR)/libexec/crossfs
 $(BUILD)/userland.tar: \
 	$(COMPLETED)/builddir \
 	$(BUILD)/sbin/init \
+	$(SLASHBR)/etc/bedrock.conf-$(BEDROCK_VERSION) \
+	$(SLASHBR)/libexec/brl-apply \
+	$(SLASHBR)/share/brl-fetch/distros/debian \
+	$(SLASHBR)/share/resolvconf/00bedrock \
 	$(SLASHBR)/bin/strat \
 	$(SLASHBR)/libexec/bouncer \
 	$(SLASHBR)/libexec/busybox \
