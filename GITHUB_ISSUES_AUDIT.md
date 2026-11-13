@@ -111,6 +111,11 @@ Generated from GitHub API on 2026-11-13. This is an inventory, not a claim that 
 - **#301**: the current master already contains the UID/GID range repair logic.
 - **#278**: fixed in commit `cfe0221`; a dangling `/etc/resolv.conf` symlink is now
   removed before selecting a live resolver target.
+- **#282**: fixed in commit `af0de9d`; etcfs now supplies `struct stat` metadata
+  to FUSE for backing and synthetic directory entries, preserving `d_type`.
+- **#284**: fixed in commit `cbaee6e`; generated libfuse headers are copied
+  recursively and the build fails early with a clear diagnostic if
+  `libfuse_config.h` is missing.
 
 The remaining open items are not all bugs in this source tree: many are feature
 requests, stale reports, distro mirror metadata, bootloader/kernel policy, or
