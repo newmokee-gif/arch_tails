@@ -1027,7 +1027,10 @@ format:
 		"$$(echo "=== Completed formatting code base ===")" \
 		"$$(echo "=== Completed formatting code base ===" | sed 's/./=/g')"
 
-check:
+# Run the focused regression suite before the slower static-analysis passes.
+# This keeps the atomic rename regression covered even when optional linters
+# are unavailable on the host.
+check: test-etcfs
 	# Run various static checkers against the codebase.
 	#
 	# Generally, one should strive to get these all to pass submit
