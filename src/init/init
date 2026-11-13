@@ -458,6 +458,15 @@ done
 step "Applying configuration"
 /bedrock/libexec/brl-apply --skip-repair
 
+# Keep Debian package metadata current in the background.  The checker is
+# deliberately non-destructive: it refreshes indexes and simulates upgrades,
+# then notifies the user with the commands needed to install them.  It survives
+# the hand-off to the selected session init and performs the next check hourly.
+if [ -x /bedrock/libexec/brl-debian-updates ]; then
+	/bedrock/libexec/brl-debian-updates \
+		>>/bedrock/run/debian-updates-daemon.log 2>&1 </dev/null &
+fi
+
 step "Handing control off to ${color_strat}${init_stratum}${color_glue}:${color_cmd}${init_cmd}${color_norm}"
 
 if ! [ -x "${init_cmd}" ]; then
