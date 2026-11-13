@@ -244,6 +244,30 @@ struct override {
 };
 
 /*
+ * Populate the metadata passed to FUSE for synthetic directory entries.  A
+ * NULL stat pointer makes libfuse advertise DT_UNKNOWN to callers of
+ * readdir(3), which breaks programs that filter entries by d_type.  The
+ * values here only describe the synthetic object; ownership and timestamps
+ * are intentionally left at their zero defaults.
+ */
+static void override_stat(const struct override *override, struct stat *st)
+{
+	memset(st, 0, sizeof(*st));
+	st->st_nlink = 1;
+	switch (override->type) {
+	case TYPE_SYMLINK:
+		st->st_mode = S_IFLNK | 0777;
+		break;
+	case TYPE_DIRECTORY:
+		st->st_mode = S_IFDIR | 0755;
+		break;
+	case TYPE_INJECT:
+		st->st_mode = S_IFREG | 0644;
+		break;
+	}
+}
+
+/*
  * File descriptors to which into filesystem calls will be directed
  */
 
@@ -1307,7 +1331,12 @@ static int m_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 			}
 			for (size_t i = 0; i < global_cnt; i++) {
 				if (strcmp(full_path, globals[i]) == 0) {
-					filler(buf, dir->d_name, NULL, 0, 0);
+					struct stat st;
+					struct stat *stp = NULL;
+					if (fstatat(fd, dir->d_name, &st, AT_SYMLINK_NOFOLLOW) == 0) {
+						stp = &st;
+					}
+					filler(buf, dir->d_name, stp, 0, 0);
 					break;
 				}
 			}
@@ -1326,7 +1355,9 @@ static int m_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 		}
 		if (path[1] == '\0') {
 			if (strchr(overrides[i].path + 1, '/') == NULL) {
-				filler(buf, overrides[i].path + path_len, NULL, 0, 0);
+				struct stat st;
+				override_stat(&overrides[i], &st);
+				filler(buf, overrides[i].path + path_len, &st, 0, 0);
 			}
 		} else {
 			if (overrides[i].path[path_len] != '/') {
@@ -1334,7 +1365,9 @@ static int m_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 			}
 			if (strchr(overrides[i].path + path_len + 1, '/')
 				== NULL) {
-				filler(buf, overrides[i].path + path_len + 1, NULL, 0, 0);
+				struct stat st;
+				override_stat(&overrides[i], &st);
+				filler(buf, overrides[i].path + path_len + 1, &st, 0, 0);
 			}
 		}
 	}
@@ -1369,7 +1402,12 @@ static int m_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 				}
 			}
 			if (!is_global && !is_override && strcmp(buf, CFG_NAME) != 0) {
-				filler(buf, dir->d_name, NULL, 0, 0);
+				struct stat st;
+				struct stat *stp = NULL;
+				if (fstatat(fd, dir->d_name, &st, AT_SYMLINK_NOFOLLOW) == 0) {
+					stp = &st;
+				}
+				filler(buf, dir->d_name, stp, 0, 0);
 			}
 		}
 		closedir(d);
