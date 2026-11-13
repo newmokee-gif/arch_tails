@@ -302,6 +302,15 @@ $(COMPLETED)/musl: vendor/musl/.success_fetching_source $(COMPLETED)/builddir $(
 	fi
 	mv $(SUPPORT)/bin/musl-gcc-new $(SUPPORT)/bin/musl-gcc
 	chmod a+rx $(SUPPORT)/bin/musl-gcc
+	# musl 1.2 and newer use a 64-bit time_t on 32-bit targets.  Refuse to
+	# build Bedrock with an older libc, which would reintroduce the year-2038
+	# overflow in etcfs/crossfs timestamps and BusyBox utilities.
+	printf '%s\n' \
+		'#include <time.h>' \
+		'_Static_assert(sizeof(time_t) >= 8, "Bedrock requires 64-bit time_t");' \
+		'int main(void) { return 0; }' > $(BUILD)/time64-check.c
+	$(SUPPORT)/bin/musl-gcc -std=c11 -c $(BUILD)/time64-check.c -o $(BUILD)/time64-check.o
+	rm -f $(BUILD)/time64-check.c $(BUILD)/time64-check.o
 	touch $(COMPLETED)/musl
 musl: $(COMPLETED)/musl
 
