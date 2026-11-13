@@ -88,6 +88,13 @@ fetch() {
 	stretch | buster)
 		bootstrap_deps="${bootstrap_deps} libapt-pkg5.0"
 		;;
+	trixie | forky | sid | unstable)
+		# Debian Trixie and newer ship apt 3.x, whose runtime library is
+		# libapt-pkg7.0.  Keep it in the bootstrap set explicitly because
+		# brldb_calculate_required_packages only follows the requested
+		# package names and otherwise reports no provider for this library.
+		bootstrap_deps="${bootstrap_deps} libapt-pkg7.0"
+		;;
 	*)
 		bootstrap_deps="${bootstrap_deps}"
 		;;
