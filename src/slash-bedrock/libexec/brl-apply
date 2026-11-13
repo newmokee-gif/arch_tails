@@ -438,7 +438,8 @@ fi
 # stratum owns a package manager just to install a package.  Keep these
 # wrappers in /bedrock/bin, which precedes /bedrock/cross/bin in the generated
 # PATH, and let pmm choose the actual package manager and stratum.
-for pmm_frontend in $(cfg_values pmm universal-frontends); do
+universal_frontends="$(cfg_values pmm universal-frontends)"
+for pmm_frontend in ${universal_frontends}; do
 	case "${pmm_frontend}" in
 	apt | apt-get | dnf)
 		frontend_path="/bedrock/bin/${pmm_frontend}"
@@ -453,6 +454,24 @@ exec /bedrock/libexec/pmm ${pmm_frontend} \"\${@}\""
 		;;
 	*)
 		printf "WARNING: Unknown pmm universal frontend \`%s\`; ignoring it.\\n" "${pmm_frontend}" >&2
+		;;
+	esac
+done
+
+# Remove wrappers that were previously generated but have since been removed
+# from the configuration.  Only remove files whose contents identify them as
+# Bedrock-generated wrappers; leave user-provided files alone.
+for pmm_frontend in apt apt-get dnf; do
+	case " ${universal_frontends} " in
+	*" ${pmm_frontend} "*)
+		;;
+	*)
+		frontend_path="/bedrock/bin/${pmm_frontend}"
+		frontend_contents="#!/bedrock/libexec/busybox sh
+exec /bedrock/libexec/pmm ${pmm_frontend} \"\${@}\""
+		if [ -f "${frontend_path}" ] && [ "$(cat "${frontend_path}" 2>/dev/null)" = "${frontend_contents}" ]; then
+			rm -f "${frontend_path}"
+		fi
 		;;
 	esac
 done
