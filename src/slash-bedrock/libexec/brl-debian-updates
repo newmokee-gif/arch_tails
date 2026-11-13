@@ -26,7 +26,10 @@ mkdir -p "${state_dir}" "${log_dir}" /bedrock/run
 lock_dir="/bedrock/run/brl-debian-updates.lock"
 if ! mkdir "${lock_dir}" 2>/dev/null; then
 	old_pid="$(cat "${lock_dir}/pid" 2>/dev/null || true)"
-	if [ -n "${old_pid}" ] && ! kill -0 "${old_pid}" 2>/dev/null; then
+	# A crash between mkdir and writing the PID leaves an empty lock.  It is
+	# safe to reclaim that incomplete lock; a live checker always writes its PID
+	# before doing any work.
+	if [ -z "${old_pid}" ] || ! kill -0 "${old_pid}" 2>/dev/null; then
 		rm -rf "${lock_dir}"
 		mkdir "${lock_dir}" 2>/dev/null || exit 0
 	else
@@ -90,15 +93,27 @@ check_stratum() {
 }
 
 check_all() {
-	for stratum in $("${brl}" list -ei 2>/dev/null); do
+	# Capture the enabled list once so stale state files can be removed after a
+	# stratum is disabled or deleted.
+	enabled_strata="$("${brl}" list -ei 2>/dev/null)"
+	for stratum in ${enabled_strata}; do
 		check_stratum "${stratum}"
+	done
+
+	for pending_state in "${state_dir}"/*.pending; do
+		[ -f "${pending_state}" ] || continue
+		pending_stratum="$(basename "${pending_state}" .pending)"
+		if ! printf '%s\n' "${enabled_strata}" | grep -Fqx "${pending_stratum}"; then
+			rm -f "${pending_state}"
+		fi
 	done
 
 	# Remove a previously displayed notice once every Debian stratum is
 	# up-to-date.  Keep it while any pending state remains so a later login can
 	# still see an alert that was emitted before the desktop session started.
 	for pending_state in "${state_dir}"/*.pending; do
-		[ -f "${pending_state}" ] && return 0
+		[ -f "${pending_state}" ] || continue
+		return 0
 	done
 	rm -f /bedrock/run/debian-updates.notice
 }
