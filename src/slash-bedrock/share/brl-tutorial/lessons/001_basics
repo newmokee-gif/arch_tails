@@ -344,6 +344,16 @@ or potentially
 $(cmd "pmm-install --help")
 
 depending on your configuration.
+
+Bedrock also installs universal ${color_cmd}apt${color_norm} and
+${color_cmd}dnf${color_norm} front-ends by default.  They use pmm to select an
+available package manager and stratum, so package installation can be done
+directly with commands such as
+
+$(rcmd "apt install <package>")
+$(rcmd "dnf install <package>")
+
+without manually prefixing the command with ${color_cmd}strat${color_norm}.
 "
 
 section "Removing ${strata}" "

@@ -1,5 +1,6 @@
 # 0.7.31
 
+- Added universal apt/apt-get/dnf front-ends through pmm
 - Added brl-fetch opensuse
 - Added brl-import support for multi-partition VM images
 - Added brl-import first-class support for docker/podman containers

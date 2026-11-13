@@ -433,6 +433,30 @@ exec /bedrock/libexec/pmm ${pmm_ui} ${file} \"\${@}\""
 	fi
 fi
 
+# Set up direct package-manager compatibility front-ends.  The regular pmm
+# front-end is configurable, but users should not need to remember which
+# stratum owns a package manager just to install a package.  Keep these
+# wrappers in /bedrock/bin, which precedes /bedrock/cross/bin in the generated
+# PATH, and let pmm choose the actual package manager and stratum.
+for pmm_frontend in $(cfg_values pmm universal-frontends); do
+	case "${pmm_frontend}" in
+	apt | apt-get | dnf)
+		frontend_path="/bedrock/bin/${pmm_frontend}"
+		frontend_contents="#!/bedrock/libexec/busybox sh
+exec /bedrock/libexec/pmm ${pmm_frontend} \"\${@}\""
+		if [ ! -x "${frontend_path}" ] || [ "$(cat "${frontend_path}" 2>/dev/null)" != "${frontend_contents}" ]; then
+			echo "${frontend_contents}" >"${frontend_path}"
+			chmod a+rx "${frontend_path}"
+		fi
+		;;
+	"")
+		;;
+	*)
+		printf "WARNING: Unknown pmm universal frontend \`%s\`; ignoring it.\\n" "${pmm_frontend}" >&2
+		;;
+	esac
+done
+
 # Patch s6 init to skip unmounting /run, as this breaks Bedrock's pre-init setup of /run
 for stratum in $(/bedrock/bin/brl list -ei); do
 	init="$(realpath "/bedrock/strata/${stratum}/sbin/init")"
