@@ -1295,6 +1295,7 @@ static int m_opendir(const char *path, struct fuse_file_info *fi)
 		rv = -1;
 		close(fd);
 	} else {
+		/* fdopendir() transfers ownership; closedir() closes fd. */
 		rv = 0;
 		closedir(d);
 	}
