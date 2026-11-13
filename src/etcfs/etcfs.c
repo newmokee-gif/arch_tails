@@ -1418,7 +1418,7 @@ static int m_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 	if (dir_exists) {
 		rv = 0;
 		if (path[1] == '\0') {
-			filler(buf, CFG_NAME, NULL, 0, 0);
+			filler(buf, CFG_NAME, &cfg_stat, 0, 0);
 		}
 	} else {
 		rv = -1;
