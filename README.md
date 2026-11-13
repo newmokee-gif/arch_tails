@@ -212,6 +212,14 @@ Enable the CUPS and Avahi services using the init system that owns that
 stratum.  The KDE printer settings panel can then discover USB and network
 printers through CUPS.
 
+Year-2038 safety
+----------------
+
+The Bedrock helper binaries are built statically with musl, whose current
+32-bit ABI uses a 64-bit `time_t`; the build now refuses a libc that does not
+provide that width.  When compiling Bedrock C code against 32-bit glibc,
+use glibc 2.34 or newer with `-D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64`.
+
 Hacking
 -------
 
