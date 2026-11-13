@@ -193,6 +193,23 @@ If you would like to specify which non-global file to read or write, prefix
 A concrete list of everything Bedrock can integrate, work-arounds for known
 limitations, and other useful information may be found at bedrocklinux.org.
 
+Printer support
+---------------
+
+Bedrock's userland does not bundle third-party printer packages.  Install the
+printing stack in one enabled stratum so applications from other strata can
+submit jobs through the shared CUPS service.  A Debian stratum can provide the
+common stack with:
+
+	$ sudo apt update && sudo apt install cups cups-client cups-filters \
+	    printer-driver-gutenprint hplip system-config-printer sane-airscan avahi-daemon
+
+For an Arch stratum, use the equivalent packages `cups`, `cups-filters`,
+`gutenprint`, `hplip`, `system-config-printer`, `sane-airscan`, and `avahi`.
+Enable the CUPS and Avahi services using the init system that owns that
+stratum.  The KDE printer settings panel can then discover USB and network
+printers through CUPS.
+
 Hacking
 -------
 
