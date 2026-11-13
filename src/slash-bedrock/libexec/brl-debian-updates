@@ -26,10 +26,22 @@ mkdir -p "${state_dir}" "${log_dir}" /bedrock/run
 lock_dir="/bedrock/run/brl-debian-updates.lock"
 if ! mkdir "${lock_dir}" 2>/dev/null; then
 	old_pid="$(cat "${lock_dir}/pid" 2>/dev/null || true)"
-	# A crash between mkdir and writing the PID leaves an empty lock.  It is
-	# safe to reclaim that incomplete lock; a live checker always writes its PID
-	# before doing any work.
-	if [ -z "${old_pid}" ] || ! kill -0 "${old_pid}" 2>/dev/null; then
+	stale_lock=false
+	if [ -n "${old_pid}" ]; then
+		# A PID file lets us reclaim a lock left by a killed checker.
+		if ! kill -0 "${old_pid}" 2>/dev/null; then
+			stale_lock=true
+		fi
+	else
+		# Do not reclaim an empty lock during the brief mkdir-to-PID window.
+		lock_mtime="$(stat -c '%Y' "${lock_dir}" 2>/dev/null || echo 0)"
+		now="$(date +%s 2>/dev/null || echo 0)"
+		case "${lock_mtime}:${now}" in
+		*[!0-9:]* | *:0) ;;
+		*) [ "${now}" -ge "$((lock_mtime + 60))" ] && stale_lock=true ;;
+		esac
+	fi
+	if "${stale_lock}"; then
 		rm -rf "${lock_dir}"
 		mkdir "${lock_dir}" 2>/dev/null || exit 0
 	else
@@ -95,7 +107,10 @@ check_stratum() {
 check_all() {
 	# Capture the enabled list once so stale state files can be removed after a
 	# stratum is disabled or deleted.
-	enabled_strata="$("${brl}" list -ei 2>/dev/null)"
+	if ! enabled_strata="$("${brl}" list -ei 2>/dev/null)"; then
+		# A transient brl failure must not erase valid pending state or notices.
+		return 0
+	fi
 	for stratum in ${enabled_strata}; do
 		check_stratum "${stratum}"
 	done
