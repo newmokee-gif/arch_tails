@@ -108,8 +108,9 @@ Generated from GitHub API on 2026-11-13. This is an inventory, not a claim that 
 - **#336**: fixed in commit `4d454d9`. FUSE rename flags are passed atomically to the
   Linux `renameat2` syscall when the target architecture exposes it; kernels without
   the syscall return `EOPNOTSUPP` instead of silently emulating non-atomic behavior.
-- **#301** and **#278**: the current master already contains the UID/GID range and
-  resolver repair logic; no duplicate patch was added.
+- **#301**: the current master already contains the UID/GID range repair logic.
+- **#278**: fixed in commit `cfe0221`; a dangling `/etc/resolv.conf` symlink is now
+  removed before selecting a live resolver target.
 
 The remaining open items are not all bugs in this source tree: many are feature
 requests, stale reports, distro mirror metadata, bootloader/kernel policy, or
