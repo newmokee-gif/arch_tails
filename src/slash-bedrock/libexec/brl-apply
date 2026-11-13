@@ -438,7 +438,7 @@ fi
 # stratum owns a package manager just to install a package.  Keep these
 # wrappers in /bedrock/bin, which precedes /bedrock/cross/bin in the generated
 # PATH, and let pmm choose the actual package manager and stratum.
-universal_frontends="$(cfg_values pmm universal-frontends)"
+universal_frontends="$(cfg_values pmm universal-frontends | tr '\n' ' ')"
 for pmm_frontend in ${universal_frontends}; do
 	case "${pmm_frontend}" in
 	apt | apt-get | dnf)
