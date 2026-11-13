@@ -36,9 +36,14 @@ if ! mkdir "${lock_dir}" 2>/dev/null; then
 		# Do not reclaim an empty lock during the brief mkdir-to-PID window.
 		lock_mtime="$(stat -c '%Y' "${lock_dir}" 2>/dev/null || echo 0)"
 		now="$(date +%s 2>/dev/null || echo 0)"
-		case "${lock_mtime}:${now}" in
-		*[!0-9:]* | *:0) ;;
-		*) [ "${now}" -ge "$((lock_mtime + 60))" ] && stale_lock=true ;;
+		case "${lock_mtime}" in
+		'' | *[!0-9]*) ;;
+		*)
+			case "${now}" in
+			'' | *[!0-9]* | 0) ;;
+			*) [ "${now}" -ge "$((lock_mtime + 60))" ] && stale_lock=true ;;
+			esac
+		;;
 		esac
 	fi
 	if "${stale_lock}"; then
