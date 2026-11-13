@@ -123,6 +123,9 @@ Generated from GitHub API on 2026-11-13. This is an inventory, not a claim that 
 - **#326**: upstream commit `591bc4a` removed the stale `libapt-pkg6.0`
   requirement; commit `7e5243b` additionally selects `libapt-pkg7.0` for
   Trixie, Forky, Sid, and Unstable.
+- **#200**: the installer already refuses a hijack when GRUB configuration
+  contains BTRFS `subvol=` or ZFS markers (commit `be75ca6` and follow-up
+  checks), preventing the known non-bootable update path.
 
 The remaining open items are not all bugs in this source tree: many are feature
 requests, stale reports, distro mirror metadata, bootloader/kernel policy, or
