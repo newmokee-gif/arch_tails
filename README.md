@@ -202,10 +202,12 @@ submit jobs through the shared CUPS service.  A Debian stratum can provide the
 common stack with:
 
 	$ sudo apt update && sudo apt install cups cups-client cups-filters \
-	    printer-driver-gutenprint hplip system-config-printer sane-airscan avahi-daemon
+	    printer-driver-gutenprint hplip system-config-printer sane sane-airscan \
+	    ipp-usb avahi-daemon
 
 For an Arch stratum, use the equivalent packages `cups`, `cups-filters`,
-`gutenprint`, `hplip`, `system-config-printer`, `sane-airscan`, and `avahi`.
+`gutenprint`, `hplip`, `system-config-printer`, `sane`, `sane-airscan`,
+`ipp-usb`, and `avahi`.
 Enable the CUPS and Avahi services using the init system that owns that
 stratum.  The KDE printer settings panel can then discover USB and network
 printers through CUPS.
