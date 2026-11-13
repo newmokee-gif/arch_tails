@@ -233,6 +233,18 @@ $(COMPLETED)/builddir:
 	touch $(COMPLETED)/builddir
 builddir: $(COMPLETED)/builddir
 
+# Keep files added to the embedded userland and the meta-init in sync for
+# incremental builds.  The builddir copy is intentionally one-shot, so these
+# explicit dependencies prevent a previously populated build directory from
+# producing an installer without the update checker.
+$(SLASHBR)/libexec/brl-debian-updates: $(COMPLETED)/builddir src/slash-bedrock/libexec/brl-debian-updates
+	cp src/slash-bedrock/libexec/brl-debian-updates $@
+	chmod 0755 $@
+
+$(BUILD)/sbin/init: $(COMPLETED)/builddir src/init/init
+	cp src/init/init $@
+	chmod 0755 $@
+
 #
 # Support libraries and tools.  Populates $(SUPPORT)
 #
@@ -854,6 +866,7 @@ crossfs: $(SLASHBR)/libexec/crossfs
 
 $(BUILD)/userland.tar: \
 	$(COMPLETED)/builddir \
+	$(BUILD)/sbin/init \
 	$(SLASHBR)/bin/strat \
 	$(SLASHBR)/libexec/bouncer \
 	$(SLASHBR)/libexec/busybox \
@@ -867,6 +880,7 @@ $(BUILD)/userland.tar: \
 	$(SLASHBR)/libexec/lvm \
 	$(SLASHBR)/libexec/manage_tty_lock \
 	$(SLASHBR)/libexec/netselect \
+	$(SLASHBR)/libexec/brl-debian-updates \
 	$(SLASHBR)/libexec/plymouth-quit \
 	$(SLASHBR)/libexec/setcap \
 	$(SLASHBR)/libexec/setfattr \

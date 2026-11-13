@@ -24,13 +24,23 @@ mkdir -p "${state_dir}" "${log_dir}" /bedrock/run
 # Use mkdir rather than an optional `flock` applet so this works before the
 # selected session stratum has populated PATH.
 lock_dir="/bedrock/run/brl-debian-updates.lock"
-mkdir "${lock_dir}" 2>/dev/null || exit 0
-trap 'rmdir "${lock_dir}" 2>/dev/null || true' EXIT
+if ! mkdir "${lock_dir}" 2>/dev/null; then
+	old_pid="$(cat "${lock_dir}/pid" 2>/dev/null || true)"
+	if [ -n "${old_pid}" ] && ! kill -0 "${old_pid}" 2>/dev/null; then
+		rm -rf "${lock_dir}"
+		mkdir "${lock_dir}" 2>/dev/null || exit 0
+	else
+		exit 0
+	fi
+fi
+printf '%s\n' "$$" >"${lock_dir}/pid"
+trap 'rm -f "${lock_dir}/pid"; rmdir "${lock_dir}" 2>/dev/null || true' EXIT
 
 notify() {
 	message="${1}"
-	printf '%s\n' "${message}" >"/bedrock/run/debian-updates.notice"
+	printf '%s\n' "${message}" >>"/bedrock/run/debian-updates.notice"
 	printf '%s\n' "${message}" >>"/bedrock/run/debian-updates.log"
+	printf '%s\n' "${message}" >>"${log_dir}/notifications.log"
 
 	# `wall` reaches logged-in terminals.  `logger` covers systemd/journald and
 	# other syslog setups.  Both are optional on minimal strata.
@@ -44,23 +54,23 @@ notify() {
 
 check_stratum() {
 	stratum="${1}"
-	os_release="$("${strat}" -r "${stratum}" /bin/cat /etc/os-release 2>/dev/null)" || return 0
+	os_release="$("${strat}" -r "${stratum}" cat /etc/os-release 2>/dev/null)" || return 0
 	id="$(printf '%s\n' "${os_release}" | awk -F= '$1 == "ID" {gsub(/[\"]/, "", $2); print tolower($2); exit}')"
 	[ "${id}" = "debian" ] || return 0
 
 	# The apt executable must belong to this stratum.  Do not use the global
 	# apt compatibility wrapper here, or another stratum could be updated.
-	"${strat}" -r "${stratum}" /bin/apt-get --version >/dev/null 2>&1 || return 0
+	"${strat}" -r "${stratum}" apt-get --version >/dev/null 2>&1 || return 0
 
 	update_log="${log_dir}/${stratum}.update.log"
-	if ! LC_ALL=C "${strat}" -r "${stratum}" /bin/apt-get \
-		-o DPkg::Lock::Timeout=30 -qq update >"${update_log}" 2>&1; then
+	if ! DEBIAN_FRONTEND=noninteractive LC_ALL=C "${strat}" -r "${stratum}" apt-get \
+		-o DPkg::Lock::Timeout=30 -o Acquire::Retries=2 -qq update >"${update_log}" 2>&1; then
 		printf '%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ') ${stratum}: apt metadata update failed" \
 			>>"/bedrock/run/debian-updates.log"
 		return 0
 	fi
 
-	simulation="$(LC_ALL=C "${strat}" -r "${stratum}" /bin/apt-get \
+	simulation="$(DEBIAN_FRONTEND=noninteractive LC_ALL=C "${strat}" -r "${stratum}" apt-get \
 		-o DPkg::Lock::Timeout=30 -s -q upgrade 2>>"${update_log}")" || return 0
 	pending="$(printf '%s\n' "${simulation}" | awk '$1 == "Inst" {print}')"
 	state="${state_dir}/${stratum}.pending"
@@ -75,7 +85,7 @@ check_stratum() {
 
 	printf '%s\n' "${pending}" >"${state}.new" && mv "${state}.new" "${state}"
 	packages="$(printf '%s\n' "${pending}" | awk 'BEGIN {separator=""} {printf "%s%s", separator, $2; separator=" "} END {print ""}')"
-	message="$(printf 'Debian updates available in stratum %s: %s\nRun:\n  sudo apt update\n  sudo apt upgrade\n' "${stratum}" "${packages}")"
+	message="$(printf 'Debian updates available in stratum %s: %s\nRun: sudo apt update && sudo apt upgrade\n' "${stratum}" "${packages}")"
 	notify "${message}"
 }
 
@@ -93,9 +103,20 @@ check_all() {
 	rm -f /bedrock/run/debian-updates.notice
 }
 
-# Check immediately at startup, then repeat hourly.  A failed network or apt
-# lock is retried on the next cycle without stopping the daemon.
-while :; do
+case "${1:---daemon}" in
+--once)
 	check_all
-	sleep "${interval}"
-done
+	;;
+--daemon)
+	# Check immediately at startup, then repeat hourly.  A failed network or
+	# apt lock is retried on the next cycle without stopping the daemon.
+	while :; do
+		check_all
+		sleep "${interval}"
+	done
+	;;
+*)
+	echo "Usage: brl-debian-updates [--once|--daemon]" >&2
+	exit 2
+	;;
+esac

@@ -463,7 +463,7 @@ step "Applying configuration"
 # then notifies the user with the commands needed to install them.  It survives
 # the hand-off to the selected session init and performs the next check hourly.
 if [ -x /bedrock/libexec/brl-debian-updates ]; then
-	/bedrock/libexec/brl-debian-updates \
+	/bedrock/libexec/brl-debian-updates --daemon \
 		>>/bedrock/run/debian-updates-daemon.log 2>&1 </dev/null &
 fi
 
