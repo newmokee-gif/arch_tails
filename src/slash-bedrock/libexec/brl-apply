@@ -442,9 +442,13 @@ universal_frontends="$(cfg_values pmm universal-frontends | tr '\n' ' ')"
 for pmm_frontend in ${universal_frontends}; do
 	case "${pmm_frontend}" in
 	apt | apt-get | dnf)
+		pmm_ui_frontend="${pmm_frontend}"
+		if [ "${pmm_frontend}" = "apt-get" ]; then
+			pmm_ui_frontend="apt"
+		fi
 		frontend_path="/bedrock/bin/${pmm_frontend}"
 		frontend_contents="#!/bedrock/libexec/busybox sh
-exec /bedrock/libexec/pmm ${pmm_frontend} \"\${@}\""
+exec /bedrock/libexec/pmm ${pmm_ui_frontend} \"\${@}\""
 		if [ ! -x "${frontend_path}" ] || [ "$(cat "${frontend_path}" 2>/dev/null)" != "${frontend_contents}" ]; then
 			echo "${frontend_contents}" >"${frontend_path}"
 			chmod a+rx "${frontend_path}"
@@ -467,8 +471,12 @@ for pmm_frontend in apt apt-get dnf; do
 		;;
 	*)
 		frontend_path="/bedrock/bin/${pmm_frontend}"
+		pmm_ui_frontend="${pmm_frontend}"
+		if [ "${pmm_frontend}" = "apt-get" ]; then
+			pmm_ui_frontend="apt"
+		fi
 		frontend_contents="#!/bedrock/libexec/busybox sh
-exec /bedrock/libexec/pmm ${pmm_frontend} \"\${@}\""
+exec /bedrock/libexec/pmm ${pmm_ui_frontend} \"\${@}\""
 		if [ -f "${frontend_path}" ] && [ "$(cat "${frontend_path}" 2>/dev/null)" = "${frontend_contents}" ]; then
 			rm -f "${frontend_path}"
 		fi
