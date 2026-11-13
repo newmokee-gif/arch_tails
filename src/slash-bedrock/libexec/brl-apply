@@ -409,9 +409,27 @@ pmm_ui="$(cfg_value pmm user-interface)"
 if [ "${pmm_ui}" = "" ]; then
 	notice "Set [pmm]/user-interface in bedrock.conf and run \`brl apply\` to update pmm front-end(s)"
 else
-	pmm_ui_files="$(/bedrock/libexec/pmm "${pmm_ui}" pmm --list-pmm-ui-files 2>/dev/null)"
+	# The value is embedded into an executable wrapper below.  Reject anything
+	# outside the package-manager identifier grammar before it can become shell
+	# syntax in that wrapper.
+	case "${pmm_ui}" in
+	*[^A-Za-z0-9._+-]* | "")
+		abort "Invalid [pmm]/user-interface value \"${pmm_ui}\"."
+		;;
+	esac
+	if ! pmm_ui_files="$(/bedrock/libexec/pmm "${pmm_ui}" pmm --list-pmm-ui-files 2>/dev/null)" || [ -z "${pmm_ui_files}" ]; then
+		abort "Unable to generate pmm front-end files for user interface \"${pmm_ui}\"."
+	fi
 	# Create front-end files
 	for file in ${pmm_ui_files}; do
+		case "${file}" in
+		pmm | pmm[[:alnum:]_.-]*)
+			;;
+		*)
+			echo "ERROR: pmm returned unsafe front-end name \"${file}\""
+			continue
+		;;
+		esac
 		tgt_contents="#!/bedrock/libexec/busybox sh
 exec /bedrock/libexec/pmm ${pmm_ui} ${file} \"\${@}\""
 		tgt_path="/bedrock/bin/${file}"
@@ -422,8 +440,12 @@ exec /bedrock/libexec/pmm ${pmm_ui} ${file} \"\${@}\""
 		elif [ -x "${tgt_path}" ] && [ "$(cat "${tgt_path}")" = "${tgt_contents}" ]; then
 			continue
 		else
-			echo "${tgt_contents}" >"${tgt_path}"
-			chmod a+rx "${tgt_path}"
+			# Write and rename atomically so an interrupted apply cannot leave a
+			# truncated executable in /bedrock/bin.
+			tmp_path="${tgt_path}.new.$$"
+			printf '%s\n' "${tgt_contents}" >"${tmp_path}" || abort "Unable to write ${tgt_path}."
+			chmod a+rx "${tmp_path}" || abort "Unable to set permissions on ${tgt_path}."
+			mv -f "${tmp_path}" "${tgt_path}" || abort "Unable to install ${tgt_path}."
 		fi
 	done
 	# Remove outdated front-end files
@@ -454,8 +476,11 @@ for pmm_frontend in ${universal_frontends}; do
 		frontend_contents="#!/bedrock/libexec/busybox sh
 exec /bedrock/libexec/pmm ${pmm_ui_frontend} \"\${@}\""
 		if [ ! -x "${frontend_path}" ] || [ "$(cat "${frontend_path}" 2>/dev/null)" != "${frontend_contents}" ]; then
-			echo "${frontend_contents}" >"${frontend_path}"
-			chmod a+rx "${frontend_path}"
+			# Replace wrappers atomically; PATH lookup must never observe a partial file.
+			tmp_path="${frontend_path}.new.$$"
+			printf '%s\n' "${frontend_contents}" >"${tmp_path}" || abort "Unable to write ${frontend_path}."
+			chmod a+rx "${tmp_path}" || abort "Unable to set permissions on ${frontend_path}."
+			mv -f "${tmp_path}" "${frontend_path}" || abort "Unable to install ${frontend_path}."
 		fi
 		;;
 	"")
