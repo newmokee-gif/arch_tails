@@ -116,6 +116,13 @@ Generated from GitHub API on 2026-11-13. This is an inventory, not a claim that 
 - **#284**: fixed in commit `cbaee6e`; generated libfuse headers are copied
   recursively and the build fails early with a clear diagnostic if
   `libfuse_config.h` is missing.
+- **#320**: the CentOS Stream bootstrap workaround is already present in
+  upstream commit `d13053e9`; it adds the Stream repository/key packages and
+  the packages that the RPM metadata scan misses (`attr`, `keyutils`, and
+  `fips-provider-so`).
+- **#326**: upstream commit `591bc4a` removed the stale `libapt-pkg6.0`
+  requirement; commit `7e5243b` additionally selects `libapt-pkg7.0` for
+  Trixie, Forky, Sid, and Unstable.
 
 The remaining open items are not all bugs in this source tree: many are feature
 requests, stale reports, distro mirror metadata, bootloader/kernel policy, or
