@@ -1,5 +1,37 @@
-Bedrock Linux Userland
-======================
+# Arch Tails — Bedrock Linux Userland
+
+Arch Tails is a planned Arch/KDE system built on Bedrock Linux.  This
+repository contains the userland foundation: the tools that combine software
+from different Linux distributions into one working system.
+
+## What this project is for
+
+- Provide an Arch/KDE base while allowing Debian, Fedora, and other strata to
+  coexist.
+- Make package commands available through Bedrock's Package Manager Manager,
+  including `apt`, `apt-get`, and `dnf`; AUR support is provided through `yay`
+  when it is installed in the Arch stratum.
+- Check enabled Debian strata at boot and every hour, then show the commands
+  needed to apply available updates.
+- Share system services and files such as CUPS printer support across strata.
+- Build small, static Bedrock helpers with 64-bit time support for year-2038
+  safety.
+
+The repository currently contains source code and build scripts for the
+Bedrock userland.  It is not a finished bootable ISO yet.
+
+## Project status
+
+The code is being actively repaired and documented.  The change log and
+`GITHUB_ISSUES_AUDIT.md` record known fixes and remaining upstream issues.
+
+## License
+
+The Bedrock userland changes in this repository are distributed under the GNU
+General Public License, version 2.  See [`LICENSE`](LICENSE).  Third-party
+components under `vendor/` retain their own upstream licenses.
+
+## Bedrock Linux background
 
 Bedrock Linux is a Linux distribution composed of user-selected components from
 various other Linux distributions.  For example, with Bedrock one may use the
