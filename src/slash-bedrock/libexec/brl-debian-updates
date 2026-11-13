@@ -111,6 +111,8 @@ check_all() {
 		# A transient brl failure must not erase valid pending state or notices.
 		return 0
 	fi
+	# Stratum names cannot contain whitespace, so word splitting is intentional.
+	# shellcheck disable=SC2086
 	for stratum in ${enabled_strata}; do
 		check_stratum "${stratum}"
 	done

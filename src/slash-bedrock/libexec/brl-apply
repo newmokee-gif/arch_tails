@@ -465,6 +465,9 @@ fi
 # wrappers in /bedrock/bin, which precedes /bedrock/cross/bin in the generated
 # PATH, and let pmm choose the actual package manager and stratum.
 universal_frontends="$(cfg_values pmm universal-frontends | tr '\n' ' ')"
+# Configuration values are deliberately split on shell whitespace; each item
+# is validated by the case statement below before it is embedded in a wrapper.
+# shellcheck disable=SC2086
 for pmm_frontend in ${universal_frontends}; do
 	case "${pmm_frontend}" in
 	apt | apt-get | dnf)
