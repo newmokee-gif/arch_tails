@@ -1402,7 +1402,8 @@ static int m_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t
 					break;
 				}
 			}
-			if (!is_global && !is_override && strcmp(buf, CFG_NAME) != 0) {
+			/* Compare the directory entry name; buf is the FUSE output buffer. */
+			if (!is_global && !is_override && strcmp(dir->d_name, CFG_NAME) != 0) {
 				struct stat st;
 				struct stat *stp = NULL;
 				if (fstatat(fd, dir->d_name, &st, AT_SYMLINK_NOFOLLOW) == 0) {
